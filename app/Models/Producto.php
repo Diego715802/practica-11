@@ -9,5 +9,12 @@ class Producto extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nombre', 'descripcion', 'precio', 'stock'];
+    // Aquí le damos permiso a Laravel para guardar estos campos en la BD
+    protected $fillable = [
+        'nombre',
+        'descripcion',
+        'precio',
+        'stock',
+        'imagen' // <-- ¡Esta es la palabra mágica que faltaba!
+    ];
 }

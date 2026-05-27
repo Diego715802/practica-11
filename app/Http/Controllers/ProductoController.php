@@ -4,55 +4,61 @@ namespace App\Http\Controllers;
 
 use App\Models\Producto;
 use Illuminate\Http\Request;
+use App\Http\Resources\ProductoResource; // Si lo estás usando
+use Illuminate\Support\Facades\Storage;
 
 class ProductoController extends Controller
 {
     public function index()
     {
-        $productos = Producto::all();
-        return response()->json($productos, 200);
+        // En tu práctica piden que retornemos todo o usemos resource.
+        // Si usas Resource, lo mapeamos:
+        return response()->json(ProductoResource::collection(Producto::all()));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'nombre' => 'required|string',
-            'precio' => 'required|numeric',
-            'stock' => 'integer'
+            'nombre'  => 'required|string',
+            'precio'  => 'required|numeric',
+            'stock'   => 'required|numeric',
+            'imagen'  => 'nullable|image|mimes:jpg,png,webp|max:2048',
         ]);
 
-        $producto = Producto::create($request->all());
-        return response()->json($producto, 201);
-    }
+        $data = $request->except('imagen');
 
-    public function show($id)
-    {
-        $producto = Producto::find($id);
-        if (!$producto) {
-            return response()->json(['mensaje' => 'Producto no encontrado'], 404);
-        }
-        return response()->json($producto, 200);
-    }
-
-    public function update(Request $request, $id)
-    {
-        $producto = Producto::find($id);
-        if (!$producto) {
-            return response()->json(['mensaje' => 'Producto no encontrado'], 404);
+        if ($request->hasFile('imagen')) {
+            $data['imagen'] = $request->file('imagen')->store('productos', 'public');
         }
 
-        $producto->update($request->all());
-        return response()->json($producto, 200);
+        return response()->json(new ProductoResource(Producto::create($data)), 201);
     }
 
-    public function destroy($id)
+    public function update(Request $request, string $id)
     {
-        $producto = Producto::find($id);
-        if (!$producto) {
-            return response()->json(['mensaje' => 'Producto no encontrado'], 404);
+        $producto = Producto::findOrFail($id);
+
+        $data = $request->except('imagen');
+
+        if ($request->hasFile('imagen')) {
+            // Borra la imagen vieja si existe
+            if ($producto->imagen) {
+                Storage::disk('public')->delete($producto->imagen);
+            }
+            $data['imagen'] = $request->file('imagen')->store('productos', 'public');
         }
 
+        $producto->update($data);
+        return response()->json(new ProductoResource($producto));
+    }
+
+    public function destroy(string $id)
+    {
+        $producto = Producto::findOrFail($id);
+        if ($producto->imagen) {
+            Storage::disk('public')->delete($producto->imagen);
+        }
         $producto->delete();
-        return response()->json(null, 204);
+        return response()->json(['mensaje' => 'Eliminado']);
     }
 }
