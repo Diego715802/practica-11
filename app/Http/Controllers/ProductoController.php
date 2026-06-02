@@ -4,16 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Models\Producto;
 use Illuminate\Http\Request;
-use App\Http\Resources\ProductoResource; // Si lo estás usando
+use App\Http\Resources\ProductoResource;
 use Illuminate\Support\Facades\Storage;
 
 class ProductoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // En tu práctica piden que retornemos todo o usemos resource.
-        // Si usas Resource, lo mapeamos:
-        return response()->json(ProductoResource::collection(Producto::all()));
+        $productos = Producto::with('categoria')
+            ->buscar($request->busqueda)
+            ->deCategoria($request->categoria_id)
+            ->rangoPrecio($request->precio_min, $request->precio_max)
+            ->orderBy($request->get('orden', 'nombre'), $request->get('dir', 'asc'))
+            ->paginate($request->get('por_pagina', 5)); // Puse 5 para que veas la paginación rápido
+
+        // ESTA ES LA LÍNEA CLAVE PARA LOS LINKS
+        return \App\Http\Resources\ProductoResource::collection($productos);
     }
 
     public function store(Request $request)
@@ -23,6 +29,7 @@ class ProductoController extends Controller
             'precio'  => 'required|numeric',
             'stock'   => 'required|numeric',
             'imagen'  => 'nullable|image|mimes:jpg,png,webp|max:2048',
+            'categoria_id' => 'nullable|exists:categorias,id'
         ]);
 
         $data = $request->except('imagen');
@@ -41,7 +48,6 @@ class ProductoController extends Controller
         $data = $request->except('imagen');
 
         if ($request->hasFile('imagen')) {
-            // Borra la imagen vieja si existe
             if ($producto->imagen) {
                 Storage::disk('public')->delete($producto->imagen);
             }

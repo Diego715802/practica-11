@@ -16,4 +16,29 @@ class Producto extends Model
     {
         return $this->belongsTo(Categoria::class);
     }
+
+    // --- NUEVOS FILTROS (QUERY SCOPES) ---
+
+    public function scopeBuscar($query, $termino)
+    {
+        // Usamos 'when' para que solo busque si realmente escribiste algo
+        return $query->when($termino, function ($q) use ($termino) {
+            $q->where(function ($sub) use ($termino) {
+                $sub->where('nombre', 'LIKE', "%{$termino}%")
+                    ->orWhere('descripcion', 'LIKE', "%{$termino}%");
+            });
+        });
+    }
+
+    public function scopeDeCategoria($query, $categoriaId)
+    {
+        return $query->when($categoriaId, fn($q) => $q->where('categoria_id', $categoriaId));
+    }
+
+    public function scopeRangoPrecio($query, $min, $max)
+    {
+        return $query
+            ->when($min, fn($q) => $q->where('precio', '>=', $min))
+            ->when($max, fn($q) => $q->where('precio', '<=', $max));
+    }
 }
