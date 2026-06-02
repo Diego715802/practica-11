@@ -15,6 +15,7 @@ class ProductoResource extends JsonResource
             'descripcion' => $this->descripcion,
             'precio'      => $this->precio,
             'stock'       => $this->stock,
+            'categoria' => new CategoriaResource($this->whenLoaded('categoria')),
             'imagen_url'  => $this->imagen ? asset('storage/' . $this->imagen) : null,
             'created_at'  => $this->created_at,
         ];
