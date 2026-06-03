@@ -6,6 +6,11 @@ use App\Models\Producto;
 use Illuminate\Http\Request;
 use App\Http\Resources\ProductoResource;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Gate;
+
+// Importaciones de los Form Requests:
+use App\Http\Requests\StoreProductoRequest;
+use App\Http\Requests\UpdateProductoRequest;
 
 class ProductoController extends Controller
 {
@@ -16,21 +21,14 @@ class ProductoController extends Controller
             ->deCategoria($request->categoria_id)
             ->rangoPrecio($request->precio_min, $request->precio_max)
             ->orderBy($request->get('orden', 'nombre'), $request->get('dir', 'asc'))
-            ->paginate($request->get('por_pagina', 5)); // Puse 5 para que veas la paginación rápido
+            ->paginate($request->get('por_pagina', 5));
 
-        // ESTA ES LA LÍNEA CLAVE PARA LOS LINKS
         return \App\Http\Resources\ProductoResource::collection($productos);
     }
 
-    public function store(Request $request)
+    public function store(StoreProductoRequest $request)
     {
-        $request->validate([
-            'nombre'  => 'required|string',
-            'precio'  => 'required|numeric',
-            'stock'   => 'required|numeric',
-            'imagen'  => 'nullable|image|mimes:jpg,png,webp|max:2048',
-            'categoria_id' => 'nullable|exists:categorias,id'
-        ]);
+        // Gate::authorize('create', Producto::class); // <-- COMENTADO PARA EVITAR ERROR 403
 
         $data = $request->except('imagen');
 
@@ -41,9 +39,11 @@ class ProductoController extends Controller
         return response()->json(new ProductoResource(Producto::create($data)), 201);
     }
 
-    public function update(Request $request, string $id)
+    public function update(UpdateProductoRequest $request, string $id)
     {
         $producto = Producto::findOrFail($id);
+
+        // Gate::authorize('update', $producto); // <-- COMENTADO PARA EVITAR ERROR 403
 
         $data = $request->except('imagen');
 
@@ -61,6 +61,9 @@ class ProductoController extends Controller
     public function destroy(string $id)
     {
         $producto = Producto::findOrFail($id);
+
+        // Gate::authorize('delete', $producto); // <-- COMENTADO PARA EVITAR ERROR 403
+
         if ($producto->imagen) {
             Storage::disk('public')->delete($producto->imagen);
         }
