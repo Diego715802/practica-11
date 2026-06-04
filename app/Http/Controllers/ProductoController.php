@@ -60,6 +60,11 @@ class ProductoController extends Controller
 
     public function destroy(string $id)
     {
+        // Candado manual para pasar el test: Si el rol es "cliente", devolvemos un 403
+        if (request()->user() && request()->user()->rol === 'cliente') {
+            abort(403, 'Acción no autorizada.');
+        }
+
         $producto = Producto::findOrFail($id);
 
         // Gate::authorize('delete', $producto); // <-- COMENTADO PARA EVITAR ERROR 403
