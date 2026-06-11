@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\NuevoPedidoRecibido;
+use App\Events\StockBajoAlerta;
 use Illuminate\Http\Request;
 use App\Models\Pedido;
 use App\Models\PedidoItem;
@@ -46,7 +48,8 @@ class PedidoController extends Controller
                 return $p;
             });
 
-            // Despacha el Job
+
+            // Despacha el Job del correo
             EnviarConfirmacionPedido::dispatch($pedido)->delay(now()->addSeconds(5));
 
             return response()->json(['pedido_id' => $pedido->id], 201);
